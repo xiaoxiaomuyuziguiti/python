@@ -10,7 +10,6 @@ import traceback
 class MyHTMLParser(HTMLParser):
     def __init__(self):
         self.movieflag = 0
-        self.yearflag = 0
         self.movies = []
         self.movie = {}
         HTMLParser.__init__(self)
@@ -49,6 +48,7 @@ class MovieDetailHTMLParser(HTMLParser):
         self.json_flag = 0
         self.country_flag = 0
         self.movie_detail = {}
+        self.movie_detail['country'] = ''
         HTMLParser.__init__(self)
 
     def handle_starttag(self, tag, attrs):
@@ -66,10 +66,15 @@ class MovieDetailHTMLParser(HTMLParser):
     def handle_data(self, data):
         # 获取到电影所属国家
         if self.country_flag == 1:
-            if data == 'Hong Kong' or data == 'Taiwan':
-                self.movie_detail['country'] = 'China'
-            else:
+            if self.movie_detail['country'] == '':
                 self.movie_detail['country'] = data
+            else:
+                self.movie_detail['country'] = self.movie_detail['country'] + '#' + data
+            # print(data)
+            # if data == 'Hong Kong' or data == 'Taiwan':
+            #     self.movie_detail['country'] = 'China'
+            # else:
+            #     self.movie_detail['country'] = data
         # 获取其他详细信息
         if self.json_flag == 1:
             # 对获取到的数据进行json反序列化
@@ -174,19 +179,12 @@ def write_movie(movie):
 # 获取电影基本信息列表
 movies = get_top250_movies_list()
 # 遍历每一部电影，抓取详细信息并计入数据库
-for movie in movies:
-    movie_detail = get_movie_detail(movie)
-    write_movie(movie_detail)
+# for movie in movies:
+#     movie_detail = get_movie_detail(movie)
+#     write_movie(movie_detail)
 
-# movie = movies[71]
-# movie_detail = get_movie_detail(movie)
-# write_movie(movie_detail)
-#
-# movie1 = movies[149]
-# movie_detail1 = get_movie_detail(movie1)
-# write_movie(movie_detail1)
-#
-# movie2 = movies[236]
-# movie_detail2 = get_movie_detail(movie2)
-# write_movie(movie_detail2)
+movie = movies[232]
+movie_detail = get_movie_detail(movie)
+write_movie(movie_detail)
+
 
