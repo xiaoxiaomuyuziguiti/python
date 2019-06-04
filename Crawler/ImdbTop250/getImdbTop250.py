@@ -156,18 +156,50 @@ def get_movie_detail(movie):
 def write_movie(movie):
     try:
         # 连接数据库
-        conn = mysql.connector.connect(user='root', password='XXY@mima123', database='testbyxxy')
+        conn = mysql.connector.connect(user='root', password='XXY@mima123', database='imdb_top250')
         cursor = conn.cursor()
+        # 删除表中原有数据
+        cursor.execute('truncate table t_movie')
+        cursor.execute('truncate table t_director')
+        cursor.execute('truncate table t_actor')
+        cursor.execute('truncate table t_country')
+        cursor.execute('truncate table t_genres')
         # 查询相同排名的数据是否已存在，若已存在先删除后插入，若不存在直接插入
-        cursor.execute('select count(*) from t_movie_info where ranking = %s', [movie['rank']])
-        values = cursor.fetchall()
-        if values == 0 :
-            cursor.execute('insert into t_movie_info (name_en,genres,rating,allstar,rating_people_nums,year,country,director,runtime,first_review,ranking,description) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-            [movie['nameEn'], movie['genres'], movie['rating'], movie['allstar'], int(movie['rating_people_nums']), movie['year'], movie['country'], movie['director'], movie['runtime'], movie['first_review'], movie['rank'], movie['description']])
-        else:
-            cursor.execute('delete from t_movie_info where ranking =%s',[movie['rank']])
-            cursor.execute('insert into t_movie_info (name_en,genres,rating,allstar,rating_people_nums,year,country,director,runtime,first_review,ranking,description) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-            [movie['nameEn'], movie['genres'], movie['rating'], movie['allstar'], int(movie['rating_people_nums']), movie['year'], movie['country'], movie['director'], movie['runtime'], movie['first_review'], movie['rank'], movie['description']])
+        # cursor.execute('select count(*) from t_movie_info where ranking = %s', [movie['rank']])
+        # values = cursor.fetchall()
+        # 插入表t_movie
+        cursor.execute('insert into t_movie (name,rating,rating_people_nums,year,runtime,description,first_review) '
+                       'values (%s,%s,%s,%s,%s,%s,%s)', [movie['nameEn'], movie['rating'],int(movie['rating_people_nums']), movie['year'], movie['runtime'], movie['description'], movie['first_review']])
+        conn.commit()
+        cursor.execute('select id from t_movie where name = %s', [movie['nameEn']])
+        # 获取movie_id
+        movie_id = cursor.fetchone()
+        print(movie_id, type(movie_id))
+        # 插入表t_director
+        directors = movie['director'].split('#')
+        for director in directors:
+            print(director, type(director))
+            cursor.execute('insert into t_director (movie_id,director_name) values (%s,%s)', [int(movie_id[0]), director])
+        # 插入表t_actor
+        actors = movie['allstar'].split('#')
+        for actor in actors:
+            cursor.execute('insert into t_actor (movie_id,actor_name) values (%s,%s)', [int(movie_id[0]), actor])
+        # 插入表t_country
+        countries = movie['country'].split('#')
+        for country in countries:
+            cursor.execute('insert into t_country (movie_id,country) values (%s,%s)', [int(movie_id[0]), country])
+        # 插入表t_genres
+        genress = movie['genres'].split('#')
+        for genres in genress:
+            cursor.execute('insert into t_genres (movie_id,genres) values (%s,%s)', [int(movie_id[0]), genres])
+
+        # if values == 0 :
+        # cursor.execute('insert into t_movie_info (name_en,genres,rating,allstar,rating_people_nums,year,country,director,runtime,first_review,ranking,description) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+        # [movie['nameEn'], movie['genres'], movie['rating'], movie['allstar'], int(movie['rating_people_nums']), movie['year'], movie['country'], movie['director'], movie['runtime'], movie['first_review'], movie['rank'], movie['description']])
+        # else:
+        #     cursor.execute('delete from t_movie_info where ranking =%s',[movie['rank']])
+        #     cursor.execute('insert into t_movie_info (name_en,genres,rating,allstar,rating_people_nums,year,country,director,runtime,first_review,ranking,description) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+        #     [movie['nameEn'], movie['genres'], movie['rating'], movie['allstar'], int(movie['rating_people_nums']), movie['year'], movie['country'], movie['director'], movie['runtime'], movie['first_review'], movie['rank'], movie['description']])
         conn.commit()
     except Exception as e:
         traceback.print_exc()
@@ -176,15 +208,17 @@ def write_movie(movie):
         conn.close()
 
 
-# 获取电影基本信息列表
-movies = get_top250_movies_list()
-# 遍历每一部电影，抓取详细信息并计入数据库
-# for movie in movies:
-#     movie_detail = get_movie_detail(movie)
-#     write_movie(movie_detail)
+if __name__ == '__main__':
+    # 获取电影基本信息列表
+    movies = get_top250_movies_list()
+    # 遍历每一部电影，抓取详细信息并计入数据库
+    # for movie in movies:
+    #     movie_detail = get_movie_detail(movie)
+    #     write_movie(movie_detail)
 
-movie = movies[232]
-movie_detail = get_movie_detail(movie)
-write_movie(movie_detail)
+    # 可以单独对某个排名的电影信息抓取
+    movie = movies[232]
+    movie_detail = get_movie_detail(movie)
+    write_movie(movie_detail)
 
 
