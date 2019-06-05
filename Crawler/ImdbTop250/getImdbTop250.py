@@ -103,7 +103,10 @@ class MovieDetailHTMLParser(HTMLParser):
             if matches.group(1) != '' and matches.group(2) != '':
                 self.movie_detail['runtime'] = int(matches.group(1))*60+int(matches.group(2))
             elif matches.group(1) != '' and matches.group(2) == '':
-                self.movie_detail['runtime'] = int(matches.group(1)) * 60
+                if re.match(r'^\w\w\d+H$', data_json['duration']):
+                    self.movie_detail['runtime'] = int(matches.group(1)) * 60
+                else:
+                    self.movie_detail['runtime'] = int(matches.group(1))
             elif matches.group(1) == '' and matches.group(2) != '':
                 self.movie_detail['runtime'] = int(matches.group(2))
             else:
@@ -158,12 +161,6 @@ def write_movie(movie):
         # 连接数据库
         conn = mysql.connector.connect(user='root', password='XXY@mima123', database='imdb_top250')
         cursor = conn.cursor()
-        # 删除表中原有数据
-        cursor.execute('truncate table t_movie')
-        cursor.execute('truncate table t_director')
-        cursor.execute('truncate table t_actor')
-        cursor.execute('truncate table t_country')
-        cursor.execute('truncate table t_genres')
         # 插入表t_movie
         cursor.execute('insert into t_movie (name,rating,rating_people_nums,year,runtime,description,first_review) '
                        'values (%s,%s,%s,%s,%s,%s,%s)', [movie['nameEn'], movie['rating'],int(movie['rating_people_nums']), movie['year'], movie['runtime'], movie['description'], movie['first_review']])
@@ -195,17 +192,40 @@ def write_movie(movie):
         conn.close()
 
 
+def delete_data():
+    try:
+        # 连接数据库
+        conn = mysql.connector.connect(user='root', password='XXY@mima123', database='imdb_top250')
+        cursor = conn.cursor()
+        # 删除表中原有数据
+        cursor.execute('truncate table t_movie')
+        cursor.execute('truncate table t_director')
+        cursor.execute('truncate table t_actor')
+        cursor.execute('truncate table t_country')
+        cursor.execute('truncate table t_genres')
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        cursor.close()
+        conn.close()
+
+
 if __name__ == '__main__':
     # 获取电影基本信息列表
     movies = get_top250_movies_list()
     # 遍历每一部电影，抓取详细信息并计入数据库
+    delete_data()
     for movie in movies:
         movie_detail = get_movie_detail(movie)
         write_movie(movie_detail)
 
     # 可以单独对某个排名的电影信息抓取
-    # movie = movies[232]
+    # movie = movies[173]
     # movie_detail = get_movie_detail(movie)
     # write_movie(movie_detail)
+    # movie = movies[162]
+    # movie_detail = get_movie_detail(movie)
+    # write_movie(movie_detail)
+    print('END')
 
 
