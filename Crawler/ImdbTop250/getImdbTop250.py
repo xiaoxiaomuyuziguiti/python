@@ -228,4 +228,3 @@ if __name__ == '__main__':
     # write_movie(movie_detail)
     print('END')
 
-
